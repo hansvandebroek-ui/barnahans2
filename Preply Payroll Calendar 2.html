@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<!-- saved from url=(0071)file:///Users/hans.vandebroek/Downloads/preply_payroll_calendar_v2.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preply Payroll Calendar</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f7f4; color: #1a1a1a; padding: 32px 24px; min-height: 100vh; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; color: #1a1a1a; }
+  .subtitle { font-size: 13px; color: #6b6b6b; margin-bottom: 4px; }
+  .note { font-size: 11px; color: #aaa; font-style: italic; margin-bottom: 24px; }
+  .view-toggle { display: flex; gap: 0; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; width: fit-content; }
+  .view-btn { font-size: 12px; padding: 6px 16px; border: none; background: #fff; color: #6b6b6b; cursor: pointer; font-family: inherit; }
+  .view-btn.active { background: #f0ede8; color: #1a1a1a; font-weight: 500; }
+  .legend { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b6b6b; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-sep { width: 1px; height: 14px; background: #ddd; margin: 0 4px; }
+  .legend-swatch { width: 18px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .cal-wrap { overflow-x: auto; border: 1px solid #ddd; border-radius: 10px; background: #fff; }
+  .cal-grid { display: grid; grid-template-columns: 130px repeat(31, 1fr); min-width: 1060px; }
+  .cal-header { background: #f0ede8; border-bottom: 1px solid #e0ddd8; }
+  .day-num { font-size: 10px; color: #6b6b6b; padding: 5px 2px; text-align: center; font-weight: 600; }
+  .day-num.after27 { color: #9b1c1c; }
+  .entity-label { font-size: 11px; color: #1a1a1a; padding: 0 10px; font-weight: 500; border-right: 1px solid #e8e5e0; background: #fff; display: flex; align-items: center; height: 38px; }
+  .entity-label.alt { background: #faf9f7; }
+  .day-cell { border-left: 1px solid #f0ede8; border-bottom: 1px solid #f0ede8; height: 38px; display: flex; align-items: center; justify-content: center; background: #fff; position: relative; }
+  .day-cell.alt { background: #faf9f7; }
+  .day-cell.weekend { opacity: 0.35; }
+  .day-cell.win-zone { background: #f0f7e8; }
+  .day-cell.win-zone.alt { background: #e6f2d8; }
+  .marker { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; cursor: default; }
+  .marker.submission { background: #d0e8f8; color: #1565c0; }
+  .marker.payment-ok { background: #c8ebd8; color: #1b5e20; }
+  .marker.payment-late { background: #ffd0cc; color: #b71c1c; }
+  .header-label { font-size: 11px; color: #6b6b6b; padding: 6px 10px; font-weight: 600; border-right: 1px solid #e0ddd8; letter-spacing: 0.04em; text-transform: uppercase; }
+  .table-view { display: none; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #ddd; }
+  th { font-size: 11px; font-weight: 600; color: #6b6b6b; text-align: left; padding: 8px 14px; border-bottom: 1px solid #e0ddd8; background: #f0ede8; text-transform: uppercase; letter-spacing: 0.04em; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f0ede8; color: #1a1a1a; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #faf9f7; }
+  .badge { display: inline-block; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 500; }
+  .badge.sub { background: #e3f2fd; color: #1565c0; }
+  .badge.win { background: #e8f5e9; color: #1b5e20; }
+  .badge.late { background: #ffebee; color: #b71c1c; }
+  .badge.vendor { background: #f3e5f5; color: #6a1b9a; }
+  .status-win { color: #2e7d32; font-weight: 500; font-size: 12px; }
+  .status-late { color: #c62828; font-weight: 500; font-size: 12px; }
+  .notes-cell { color: #6b6b6b; font-size: 11px; max-width: 260px; }
+  .tooltip { position: fixed; background: #1a1a1a; border-radius: 6px; padding: 7px 11px; font-size: 11px; color: #fff; pointer-events: none; z-index: 9999; max-width: 220px; line-height: 1.5; display: none; }
+  @media print { body { background: #fff; padding: 16px; } }
+</style>
+</head>
+<body>
+
+<h1>Preply Payroll Calendar</h1>
+<p class="subtitle">Submission deadlines (S) and payment dates (P) per entity — win zone = payment on or before day 27</p>
+<p class="note">UK / US / Ukraine / Germany / Spain have entity-specific monthly deadline calendars. Dates shown are conservative fixed anchors.</p>
+
+<div class="view-toggle">
+  <button class="view-btn active" id="btn-cal" onclick="switchView(&#39;cal&#39;)">Calendar view</button>
+  <button class="view-btn" id="btn-table" onclick="switchView(&#39;table&#39;)">Table view</button>
+</div>
+
+<div id="cal-view">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1565c0"></div>Submission deadline (S)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1b5e20"></div>Payment on time (P)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b71c1c"></div>Payment after day 27 (P)</div>
+    <div class="legend-sep"></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f0f7e8; border:1px solid #cde0b0"></div>Win zone (days 1–27)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f0ede8; border:1px solid #ddd"></div>Weekend (greyed)</div>
+  </div>
+  <div class="cal-wrap">
+    <div class="cal-grid" id="calGrid"><div class="cal-header header-label">Entity</div><div class="cal-header day-num">1</div><div class="cal-header day-num">2</div><div class="cal-header day-num">3</div><div class="cal-header day-num">4</div><div class="cal-header day-num">5</div><div class="cal-header day-num">6</div><div class="cal-header day-num">7</div><div class="cal-header day-num">8</div><div class="cal-header day-num">9</div><div class="cal-header day-num">10</div><div class="cal-header day-num">11</div><div class="cal-header day-num">12</div><div class="cal-header day-num">13</div><div class="cal-header day-num">14</div><div class="cal-header day-num">15</div><div class="cal-header day-num">16</div><div class="cal-header day-num">17</div><div class="cal-header day-num">18</div><div class="cal-header day-num">19</div><div class="cal-header day-num">20</div><div class="cal-header day-num">21</div><div class="cal-header day-num">22</div><div class="cal-header day-num">23</div><div class="cal-header day-num">24</div><div class="cal-header day-num">25</div><div class="cal-header day-num">26</div><div class="cal-header day-num">27</div><div class="cal-header day-num after27">28</div><div class="cal-header day-num after27">29</div><div class="cal-header day-num after27">30</div><div class="cal-header day-num after27">31</div><div class="entity-label">Spain</div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"><div class="marker submission">S</div></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell"><div class="marker payment-late">P</div></div><div class="day-cell"></div><div class="day-cell"></div><div class="day-cell weekend"></div><div class="entity-label alt">UK</div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"><div class="marker submission">S</div></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"><div class="marker payment-ok">P</div></div><div class="day-cell alt win-zone"></div><div class="day-cell alt"></div><div class="day-cell alt"></div><div class="day-cell alt"></div><div class="day-cell alt weekend"></div><div class="entity-label">Germany</div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"><div class="marker submission">S</div></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell"></div><div class="day-cell"></div><div class="day-cell"><div class="marker payment-late">P</div></div><div class="day-cell weekend"></div><div class="entity-label alt">US (1/2)</div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"><div class="marker submission">S</div></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"><div class="marker payment-ok">P</div></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt"></div><div class="day-cell alt"></div><div class="day-cell alt"></div><div class="day-cell alt weekend"></div><div class="entity-label">US (2/2)</div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"><div class="marker submission">S</div></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell"></div><div class="day-cell"></div><div class="day-cell"></div><div class="day-cell weekend"><div class="marker payment-late">P</div></div><div class="entity-label alt">Ukraine (adv)</div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"><div class="marker submission">S</div></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"><div class="marker payment-ok">P</div></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt"></div><div class="day-cell alt"></div><div class="day-cell alt"></div><div class="day-cell alt weekend"></div><div class="entity-label">Ukraine (fin)</div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"><div class="marker payment-ok">P</div></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"><div class="marker submission">S</div></div><div class="day-cell win-zone"></div><div class="day-cell"></div><div class="day-cell"></div><div class="day-cell"></div><div class="day-cell weekend"></div><div class="entity-label alt">Deel EOR</div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"><div class="marker submission">S</div></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt"></div><div class="day-cell alt"></div><div class="day-cell alt"></div><div class="day-cell alt weekend"></div><div class="entity-label">Contractors</div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"><div class="marker submission">S</div></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell weekend win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell win-zone"></div><div class="day-cell"></div><div class="day-cell"></div><div class="day-cell"><div class="marker payment-late">P</div></div><div class="day-cell weekend"></div><div class="entity-label alt">Deel CC</div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"><div class="marker submission">S</div></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt weekend win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt win-zone"></div><div class="day-cell alt"></div><div class="day-cell alt"></div><div class="day-cell alt"><div class="marker payment-late">P</div></div><div class="day-cell alt weekend"></div></div>
+  </div>
+</div>
+
+<div class="table-view" id="table-view">
+  <table>
+    <thead>
+      <tr>
+        <th>Entity</th>
+        <th>Vendor</th>
+        <th>Submission</th>
+        <th>Payment date</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"><tr>
+      <td><strong>Spain</strong></td>
+      <td style="color:#6b6b6b">Deel</td>
+      <td><span class="badge sub">Day 13</span></td>
+      <td><span class="badge late">Day 28</span></td>
+      <td><span class="status-late">After day 27</span></td>
+      <td class="notes-cell">Employment. Input + Cobee + Alan by 13th. Payment ~28th.</td>
+    </tr><tr>
+      <td><strong>UK</strong></td>
+      <td style="color:#6b6b6b">Deel</td>
+      <td><span class="badge sub">Day 13</span></td>
+      <td><span class="badge win">Day 26</span></td>
+      <td><span class="status-win">✓ Win zone</span></td>
+      <td class="notes-cell">Employment. Input by 13th (varies 13–16 monthly). Payment 26th–31st.</td>
+    </tr><tr>
+      <td><strong>Germany</strong></td>
+      <td style="color:#6b6b6b">NHS</td>
+      <td><span class="badge sub">Day 11</span></td>
+      <td><span class="badge late">Day 30</span></td>
+      <td><span class="status-late">After day 27</span></td>
+      <td class="notes-cell">Employment. Input by 11th. Payment end of month.</td>
+    </tr><tr>
+      <td><strong>US (1/2)</strong></td>
+      <td style="color:#6b6b6b">Insperity</td>
+      <td><span class="badge sub">Day 10</span></td>
+      <td><span class="badge win">Day 15</span></td>
+      <td><span class="status-win">✓ Win zone</span></td>
+      <td class="notes-cell">Semi-monthly. Input by 10th (varies 10–13 monthly), pay ~15th.</td>
+    </tr><tr>
+      <td><strong>US (2/2)</strong></td>
+      <td style="color:#6b6b6b">Insperity</td>
+      <td><span class="badge sub">Day 25</span></td>
+      <td><span class="badge late">Day 31</span></td>
+      <td><span class="status-late">After day 27</span></td>
+      <td class="notes-cell">Semi-monthly. Input by 25th (varies 25–27 monthly), pay end of month.</td>
+    </tr><tr>
+      <td><strong>Ukraine (adv)</strong></td>
+      <td style="color:#6b6b6b">EBS</td>
+      <td><span class="badge sub">Day 16</span></td>
+      <td><span class="badge win">Day 22</span></td>
+      <td><span class="status-win">✓ Win zone</span></td>
+      <td class="notes-cell">Advance: input by 16th, paid on 22nd.</td>
+    </tr><tr>
+      <td><strong>Ukraine (fin)</strong></td>
+      <td style="color:#6b6b6b">EBS</td>
+      <td><span class="badge sub">Day 26</span></td>
+      <td><span class="badge win">Day 7</span></td>
+      <td><span class="status-win">✓ Win zone</span></td>
+      <td class="notes-cell">Final: input by 26th, paid on 7th of next month.</td>
+    </tr><tr>
+      <td><strong>Deel EOR</strong></td>
+      <td style="color:#6b6b6b">Deel</td>
+      <td><span class="badge sub">Before 20th</span></td>
+      <td><span class="badge vendor">Vendor-owned</span></td>
+      <td><span style="color:#6b6b6b;font-size:12px">—</span></td>
+      <td class="notes-cell">EOR: input before 20th. Vendor owns payment date.</td>
+    </tr><tr>
+      <td><strong>Contractors</strong></td>
+      <td style="color:#6b6b6b">JP Morgan</td>
+      <td><span class="badge sub">Day 20</span></td>
+      <td><span class="badge late">Day 30</span></td>
+      <td><span class="status-late">After day 27</span></td>
+      <td class="notes-cell">Input by 20th. Payment last 2 biz days of month.</td>
+    </tr><tr>
+      <td><strong>Deel CC</strong></td>
+      <td style="color:#6b6b6b">Deel</td>
+      <td><span class="badge sub">Before 20th</span></td>
+      <td><span class="badge late">Day 30</span></td>
+      <td><span class="status-late">After day 27</span></td>
+      <td class="notes-cell">CC contractors. Input before 20th. Invoice to finance 5 biz days before month end.</td>
+    </tr></tbody>
+  </table>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const entities = [
+  { name:'Spain',         vendor:'Deel',      sub:13, subLabel:'Day 13',      pay:28,   note:'Employment. Input + Cobee + Alan by 13th. Payment ~28th.' },
+  { name:'UK',            vendor:'Deel',      sub:13, subLabel:'Day 13',      pay:26,   note:'Employment. Input by 13th (varies 13–16 monthly). Payment 26th–31st.' },
+  { name:'Germany',       vendor:'NHS',       sub:11, subLabel:'Day 11',      pay:30,   note:'Employment. Input by 11th. Payment end of month.' },
+  { name:'US (1/2)',      vendor:'Insperity', sub:10, subLabel:'Day 10',      pay:15,   note:'Semi-monthly. Input by 10th (varies 10–13 monthly), pay ~15th.' },
+  { name:'US (2/2)',      vendor:'Insperity', sub:25, subLabel:'Day 25',      pay:31,   note:'Semi-monthly. Input by 25th (varies 25–27 monthly), pay end of month.' },
+  { name:'Ukraine (adv)', vendor:'EBS',       sub:16, subLabel:'Day 16',      pay:22,   note:'Advance: input by 16th, paid on 22nd.' },
+  { name:'Ukraine (fin)', vendor:'EBS',       sub:26, subLabel:'Day 26',      pay:7,    note:'Final: input by 26th, paid on 7th of next month.' },
+  { name:'Deel EOR',      vendor:'Deel',      sub:19, subLabel:'Before 20th', pay:null, note:'EOR: input before 20th. Vendor owns payment date.' },
+  { name:'Contractors',   vendor:'JP Morgan', sub:20, subLabel:'Day 20',      pay:30,   note:'Input by 20th. Payment last 2 biz days of month.' },
+  { name:'Deel CC',       vendor:'Deel',      sub:19, subLabel:'Before 20th', pay:30,   note:'CC contractors. Input before 20th. Invoice to finance 5 biz days before month end.' },
+];
+
+const days = Array.from({length:31}, (_,i) => i+1);
+const weekends = new Set([3,4,10,11,17,18,24,25,31]);
+
+function buildCalendar() {
+  const grid = document.getElementById('calGrid');
+
+  // Header row
+  const hLabel = document.createElement('div');
+  hLabel.className = 'cal-header header-label';
+  hLabel.textContent = 'Entity';
+  grid.appendChild(hLabel);
+
+  days.forEach(d => {
+    const cell = document.createElement('div');
+    cell.className = 'cal-header day-num' + (d > 27 ? ' after27' : '');
+    cell.textContent = d;
+    grid.appendChild(cell);
+  });
+
+  // Entity rows
+  entities.forEach((e, idx) => {
+    const alt = idx % 2 === 1;
+
+    const label = document.createElement('div');
+    label.className = 'entity-label' + (alt ? ' alt' : '');
+    label.textContent = e.name;
+    grid.appendChild(label);
+
+    days.forEach(d => {
+      const cell = document.createElement('div');
+      const isWin = d <= 27;
+      const isWeekend = weekends.has(d);
+      cell.className = 'day-cell'
+        + (alt ? ' alt' : '')
+        + (isWeekend ? ' weekend' : '')
+        + (isWin ? ' win-zone' : '');
+
+      const isSub = d === e.sub;
+      const isPay = e.pay !== null && d === e.pay;
+
+      if (isSub) {
+        const m = document.createElement('div');
+        m.className = 'marker submission';
+        m.textContent = 'S';
+        addTooltip(cell, `${e.name} — submission to ${e.vendor}. ${e.subLabel}. ${e.note}`);
+        cell.appendChild(m);
+      } else if (isPay) {
+        const onTime = e.pay <= 27;
+        const m = document.createElement('div');
+        m.className = onTime ? 'marker payment-ok' : 'marker payment-late';
+        m.textContent = 'P';
+        addTooltip(cell, `${e.name} — payment day ${e.pay}. ${onTime ? '✓ Win zone.' : '⚠ After day 27.'} ${e.note}`);
+        cell.appendChild(m);
+      }
+
+      grid.appendChild(cell);
+    });
+  });
+}
+
+function addTooltip(el, text) {
+  const tip = document.getElementById('tooltip');
+  el.addEventListener('mouseenter', ev => {
+    tip.textContent = text;
+    tip.style.display = 'block';
+    tip.style.left = (ev.clientX + 14) + 'px';
+    tip.style.top = (ev.clientY - 8) + 'px';
+  });
+  el.addEventListener('mousemove', ev => {
+    tip.style.left = (ev.clientX + 14) + 'px';
+    tip.style.top = (ev.clientY - 8) + 'px';
+  });
+  el.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+}
+
+function buildTable() {
+  const tbody = document.getElementById('tableBody');
+  entities.forEach(e => {
+    const onTime = e.pay !== null && e.pay <= 27;
+    const late = e.pay !== null && e.pay > 27;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${e.name}</strong></td>
+      <td style="color:#6b6b6b">${e.vendor}</td>
+      <td><span class="badge sub">${e.subLabel}</span></td>
+      <td>${e.pay !== null
+        ? `<span class="badge ${onTime ? 'win' : 'late'}">Day ${e.pay}</span>`
+        : `<span class="badge vendor">Vendor-owned</span>`}</td>
+      <td>${onTime
+        ? `<span class="status-win">✓ Win zone</span>`
+        : late
+        ? `<span class="status-late">After day 27</span>`
+        : `<span style="color:#6b6b6b;font-size:12px">—</span>`}</td>
+      <td class="notes-cell">${e.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function switchView(v) {
+  document.getElementById('cal-view').style.display = v === 'cal' ? 'block' : 'none';
+  document.getElementById('table-view').style.display = v === 'table' ? 'block' : 'none';
+  document.getElementById('btn-cal').classList.toggle('active', v === 'cal');
+  document.getElementById('btn-table').classList.toggle('active', v === 'table');
+}
+
+buildCalendar();
+buildTable();
+</script>
+
+
+</body></html>
