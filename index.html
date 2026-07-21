@@ -185,6 +185,7 @@ const weekends = new Set([3,4,10,11,17,18,24,25,31]);
 
 function buildCalendar() {
   const grid = document.getElementById('calGrid');
+ grid.innerHTML = '';
 
   // Header row
   const hLabel = document.createElement('div');
